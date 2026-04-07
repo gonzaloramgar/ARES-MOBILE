@@ -1,5 +1,8 @@
 package com.ares.mobile.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Memory
@@ -8,15 +11,17 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -31,6 +36,11 @@ import com.ares.mobile.ui.screens.FirstRunScreen
 import com.ares.mobile.ui.screens.MemoryScreen
 import com.ares.mobile.ui.screens.SettingsScreen
 import com.ares.mobile.ui.screens.TasksScreen
+import com.ares.mobile.ui.theme.BackgroundDeep
+import com.ares.mobile.ui.theme.NeonRed
+import com.ares.mobile.ui.theme.NeonRedBorder
+import com.ares.mobile.ui.theme.SurfaceVariantDark
+import com.ares.mobile.ui.theme.TextMuted
 import com.ares.mobile.viewmodel.AresViewModelFactory
 import com.ares.mobile.viewmodel.ChatViewModel
 import com.ares.mobile.viewmodel.MemoryViewModel
@@ -51,9 +61,7 @@ private val mainDestinations = listOf(
 )
 
 @Composable
-fun AppNavigation(
-    modifier: Modifier = Modifier,
-) {
+fun AppNavigation(modifier: Modifier = Modifier) {
     val application = LocalContext.current.applicationContext as AresApplication
     val viewModelFactory = remember(application) { AresViewModelFactory(application.appContainer) }
 
@@ -70,32 +78,52 @@ fun AppNavigation(
     LaunchedEffect(settingsState.firstRunCompleted) {
         val targetRoute = if (settingsState.firstRunCompleted) "chat" else "first-run"
         navController.navigate(targetRoute) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                inclusive = true
-            }
+            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
             launchSingleTop = true
         }
     }
 
     Scaffold(
         modifier = modifier,
+        containerColor = BackgroundDeep,
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = BackgroundDeep,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier
+                        .background(BackgroundDeep)
+                        .border(
+                            width = 1.dp,
+                            color = NeonRedBorder,
+                        ),
+                ) {
                     mainDestinations.forEach { item ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
                         NavigationBarItem(
-                            selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
+                            selected = selected,
                             onClick = {
                                 navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label) },
+                            icon = {
+                                Icon(
+                                    item.icon,
+                                    contentDescription = item.label,
+                                    modifier = Modifier,
+                                )
+                            },
+                            label = { Text(item.label, fontSize = 9.sp) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = NeonRed,
+                                selectedTextColor = NeonRed,
+                                unselectedIconColor = TextMuted,
+                                unselectedTextColor = TextMuted,
+                                indicatorColor = SurfaceVariantDark,
+                            ),
                         )
                     }
                 }
@@ -103,7 +131,9 @@ fun AppNavigation(
         },
     ) { paddingValues ->
         NavHost(
-            modifier = Modifier.padding(paddingValues),
+            modifier = Modifier
+                .padding(paddingValues)
+                .background(BackgroundDeep),
             navController = navController,
             startDestination = if (settingsState.firstRunCompleted) "chat" else "first-run",
         ) {

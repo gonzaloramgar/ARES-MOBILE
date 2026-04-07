@@ -7,41 +7,52 @@ import android.graphics.Bitmap
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
@@ -49,209 +60,336 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ares.mobile.agent.ChatMessage
 import com.ares.mobile.agent.MessageRole
 import com.ares.mobile.ui.components.MessageBubble
 import com.ares.mobile.ui.components.QuickActionsBar
 import com.ares.mobile.ui.components.TypingIndicator
+import com.ares.mobile.ui.theme.BackgroundDeep
+import com.ares.mobile.ui.theme.BorderSubtle
+import com.ares.mobile.ui.theme.NeonRed
+import com.ares.mobile.ui.theme.NeonRedBorder
+import com.ares.mobile.ui.theme.NeonRedDim
+import com.ares.mobile.ui.theme.SurfaceDark
+import com.ares.mobile.ui.theme.TextMuted
+import com.ares.mobile.ui.theme.TextPrimary
+import com.ares.mobile.ui.theme.TextSecondary
 import com.ares.mobile.viewmodel.ChatViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(
-    viewModel: ChatViewModel,
-) {
+fun ChatScreen(viewModel: ChatViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview(),
-    ) { bitmap ->
+    val listState = rememberLazyListState()
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
-            saveLatestCapture(context, bitmap)
+            saveLatestCapture(LocalContext.current, bitmap)
             viewModel.submitMessage("/camera")
         }
     }
-    val speechLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
+    val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val transcript = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
         if (result.resultCode == Activity.RESULT_OK && transcript.isNotBlank()) {
             viewModel.submitMessage(transcript)
         }
     }
+    val context = LocalContext.current
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                        Text("ARES", style = MaterialTheme.typography.titleMedium)
-                        Text(state.modelHeadline, style = MaterialTheme.typography.bodySmall)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = viewModel::clearConversation) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = "Borrar conversación")
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 12.dp),
-        ) {
-            if (state.installHint.isNotBlank()) {
-                Text(
-                    text = state.installHint,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-            }
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 12.dp),
-            ) {
-                items(state.messages, key = { it.id.takeIf { id -> id != 0L } ?: it.timestamp }) { message ->
-                    MessageBubble(message)
-                }
-                if (state.draftResponse.isNotBlank()) {
-                    item {
-                        MessageBubble(
-                            ChatMessage(
-                                role = MessageRole.Assistant,
-                                content = state.draftResponse,
-                                timestamp = System.currentTimeMillis(),
-                                toolName = state.activeTool,
-                            )
-                        )
-                    }
-                }
-                if (state.isGenerating) {
-                    item {
-                        TypingIndicator(modifier = Modifier.padding(start = 8.dp, top = 4.dp))
-                    }
-                }
-            }
+    LaunchedEffect(state.messages.size, state.draftResponse) {
+        val count = state.messages.size + if (state.draftResponse.isNotBlank() || state.isGenerating) 1 else 0
+        if (count > 0) listState.animateScrollToItem(count - 1)
+    }
 
-            QuickActionsBar(
-                actions = state.quickActions,
-                onActionClick = { action -> viewModel.runQuickAction(action.prompt) },
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundDeep),
+    ) {
+        // ── Custom header ──────────────────────────────────────────────
+        AresChatHeader(
+            modelHeadline = state.modelHeadline,
+            isGenerating = state.isGenerating,
+            onClear = viewModel::clearConversation,
+        )
 
-            Row(
+        // ── Install hint ───────────────────────────────────────────────
+        if (state.installHint.isNotBlank()) {
+            Text(
+                text = state.installHint,
+                color = NeonRed.copy(alpha = 0.7f),
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(26.dp),
-                    tonalElevation = 6.dp,
-                    shadowElevation = 10.dp,
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        OutlinedTextField(
-                            value = state.input,
-                            onValueChange = viewModel::onInputChanged,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onPreviewKeyEvent { keyEvent ->
-                                    if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Enter) {
-                                        if (keyEvent.isShiftPressed) {
-                                            viewModel.onInputChanged(state.input + "\n")
-                                        } else {
-                                            viewModel.sendMessage()
-                                        }
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                },
-                            placeholder = { Text("Escribe tu mensaje") },
-                            minLines = 1,
-                            maxLines = 6,
-                            shape = RoundedCornerShape(20.dp),
-                            keyboardOptions = KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Sentences,
-                                imeAction = ImeAction.Send,
-                            ),
-                            keyboardActions = KeyboardActions(onSend = { viewModel.sendMessage() }),
-                            colors = TextFieldDefaults.colors(
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
-                            ),
-                        )
+                    .background(NeonRed.copy(alpha = 0.05f))
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+            )
+        }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            IconButton(onClick = { cameraLauncher.launch(null) }) {
-                                Icon(Icons.Default.CameraAlt, contentDescription = "Cámara")
-                            }
-                            IconButton(
-                                onClick = {
-                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                        putExtra(RecognizerIntent.EXTRA_PROMPT, "Habla con ARES")
-                                    }
-                                    speechLauncher.launch(intent)
-                                }
-                            ) {
-                                Icon(Icons.Default.Mic, contentDescription = "Voz")
-                            }
-                            IconButton(onClick = { viewModel.onInputChanged(state.input + "\n") }) {
-                                Text("↵")
-                            }
-
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            FilledIconButton(
-                                onClick = viewModel::sendMessage,
-                                modifier = Modifier.size(42.dp),
-                            ) {
-                                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
-                                }
-                            }
-                        }
-                    }
+        // ── Messages ───────────────────────────────────────────────────
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(vertical = 14.dp),
+        ) {
+            items(state.messages, key = { it.id.takeIf { id -> id != 0L } ?: it.timestamp }) { message ->
+                MessageBubble(message)
+            }
+            if (state.draftResponse.isNotBlank()) {
+                item {
+                    MessageBubble(
+                        ChatMessage(
+                            role = MessageRole.Assistant,
+                            content = state.draftResponse,
+                            timestamp = System.currentTimeMillis(),
+                            toolName = state.activeTool,
+                        ),
+                    )
                 }
+            }
+            if (state.isGenerating && state.draftResponse.isBlank()) {
+                item {
+                    TypingIndicator(modifier = Modifier.padding(start = 4.dp, top = 2.dp))
+                }
+            }
+        }
+
+        // ── Quick actions ──────────────────────────────────────────────
+        QuickActionsBar(
+            actions = state.quickActions,
+            onActionClick = { action -> viewModel.runQuickAction(action.prompt) },
+        )
+
+        // ── Input area ─────────────────────────────────────────────────
+        AresChatInput(
+            input = state.input,
+            isGenerating = state.isGenerating,
+            onInputChange = viewModel::onInputChanged,
+            onSend = viewModel::sendMessage,
+            onCamera = { cameraLauncher.launch(null) },
+            onMic = {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Habla con ARES")
+                }
+                speechLauncher.launch(intent)
+            },
+        )
+    }
+}
+
+@Composable
+private fun AresChatHeader(
+    modelHeadline: String,
+    isGenerating: Boolean,
+    onClear: () -> Unit,
+) {
+    val pulse = rememberInfiniteTransition(label = "pulse")
+    val dotAlpha by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.3f,
+        animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Reverse),
+        label = "dot",
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BackgroundDeep)
+            .border(bottom = 1.dp, color = NeonRedBorder)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Logo
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(
+                        Brush.linearGradient(listOf(NeonRed, NeonRedDim)),
+                        RoundedCornerShape(10.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("⬡", fontSize = 17.sp)
+            }
+            Text(
+                text = "ARES",
+                color = NeonRed,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 4.sp,
+            )
+        }
+
+        // Model indicator + clear button
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .background(
+                            NeonRed.copy(alpha = if (isGenerating) dotAlpha else 1f),
+                            CircleShape,
+                        ),
+                )
+                Text(
+                    text = modelHeadline,
+                    color = NeonRed.copy(alpha = 0.7f),
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+            IconButton(onClick = onClear, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Default.DeleteSweep,
+                    contentDescription = "Borrar conversación",
+                    tint = TextMuted,
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
     }
 }
 
+@Composable
+private fun AresChatInput(
+    input: String,
+    isGenerating: Boolean,
+    onInputChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onCamera: () -> Unit,
+    onMic: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BackgroundDeep)
+            .border(top = 1.dp, color = NeonRedBorder)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // Text field
+        BasicTextField(
+            value = input,
+            onValueChange = onInputChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(SurfaceDark, RoundedCornerShape(22.dp))
+                .border(1.dp, BorderSubtle, RoundedCornerShape(22.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                        if (event.isShiftPressed) {
+                            onInputChange(input + "\n"); true
+                        } else {
+                            onSend(); true
+                        }
+                    } else false
+                },
+            textStyle = LocalTextStyle.current.copy(color = TextPrimary, fontSize = 13.sp, lineHeight = 19.sp),
+            cursorBrush = SolidColor(NeonRed),
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Send,
+            ),
+            keyboardActions = KeyboardActions(onSend = { onSend() }),
+            decorationBox = { inner ->
+                if (input.isEmpty()) Text("Escribe o habla...", color = TextSecondary, fontSize = 13.sp)
+                inner()
+            },
+        )
+
+        // Action row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Camera
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, NeonRedBorder, CircleShape)
+                    .clickable { onCamera() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.CameraAlt, contentDescription = "Cámara", tint = NeonRed.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(8.dp))
+
+            // Mic
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, NeonRedBorder, CircleShape)
+                    .clickable { onMic() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.Mic, contentDescription = "Voz", tint = NeonRed.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            // Send button
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        if (!isGenerating) Brush.linearGradient(listOf(NeonRed, NeonRedDim))
+                        else Brush.linearGradient(listOf(TextMuted, TextMuted)),
+                        CircleShape,
+                    )
+                    .clip(CircleShape)
+                    .clickable(enabled = !isGenerating && input.isNotBlank()) { onSend() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    contentDescription = "Enviar",
+                    tint = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
+}
+
+// Extension for single-side border
+private fun Modifier.border(bottom: Dp? = null, top: Dp? = null, color: androidx.compose.ui.graphics.Color): Modifier {
+    val dp = bottom ?: top ?: return this
+    return drawBehind {
+        val y = if (bottom != null) size.height else 0f
+        drawLine(
+            color = color,
+            start = androidx.compose.ui.geometry.Offset(0f, y),
+            end = androidx.compose.ui.geometry.Offset(size.width, y),
+            strokeWidth = dp.toPx(),
+        )
+    }
+}
+
+private fun Modifier.drawBehind(onDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit): Modifier =
+    this.then(androidx.compose.ui.draw.drawBehind(onDraw))
+
 private fun saveLatestCapture(context: Context, bitmap: Bitmap) {
-    val capturesDir = File(context.filesDir, "captures")
-    if (!capturesDir.exists()) {
-        capturesDir.mkdirs()
-    }
-    val captureFile = File(capturesDir, "latest.jpg")
-    FileOutputStream(captureFile).use { output ->
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
-    }
+    val dir = File(context.filesDir, "captures").also { it.mkdirs() }
+    FileOutputStream(File(dir, "latest.jpg")).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
 }
