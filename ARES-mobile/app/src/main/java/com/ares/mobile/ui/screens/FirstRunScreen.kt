@@ -358,7 +358,7 @@ private fun AresLogoCanvas(modifier: Modifier = Modifier, sizeDp: Dp = 160.dp) {
         val gapPx = 3.dp.toPx()
 
         // ── Outer glow ring (pulsing scale) ──────────────────────────────
-        withTransform({ scale(pulseScale, pivot = Offset(cx, cy)) }) {
+        withTransform({ scale(scaleX = pulseScale, scaleY = pulseScale, pivot = Offset(cx, cy)) }) {
             drawCircle(
                 color = red.copy(alpha = 0.22f),
                 radius = r * 0.89f,
@@ -367,7 +367,7 @@ private fun AresLogoCanvas(modifier: Modifier = Modifier, sizeDp: Dp = 160.dp) {
         }
 
         // ── Mid ring (slight pulse) ───────────────────────────────────────
-        withTransform({ scale(midPulseScale, pivot = Offset(cx, cy)) }) {
+        withTransform({ scale(scaleX = midPulseScale, scaleY = midPulseScale, pivot = Offset(cx, cy)) }) {
             drawCircle(color = red.copy(alpha = 0.28f), radius = r * 0.71f, style = Stroke(width = sp))
         }
 
