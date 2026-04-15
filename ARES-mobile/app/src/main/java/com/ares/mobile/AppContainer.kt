@@ -11,6 +11,7 @@ import com.ares.mobile.agent.ConversationHistory
 import com.ares.mobile.agent.ITool
 import com.ares.mobile.agent.ToolRegistry
 import com.ares.mobile.ai.GemmaClient
+import com.ares.mobile.ai.NetworkChecker
 import com.ares.mobile.ai.ModelManager
 import com.ares.mobile.ai.ModelRouter
 import com.ares.mobile.data.AppDatabase
@@ -44,9 +45,13 @@ class AppContainer(context: Context) {
     val memoryDao = database.memoryDao()
     val scheduledTaskDao = database.scheduledTaskDao()
 
+    val modelRouter = ModelRouter(appContext)
+    val modelManager = ModelManager(appContext, dataStore, modelRouter)
+    val networkChecker = NetworkChecker(appContext)
+
     private val tools: List<ITool> = listOf(
         ClipboardTool(appContext),
-        CameraTool(appContext),
+        CameraTool(appContext.filesDir, modelManager, networkChecker),
         LocationTool(appContext),
         VoiceTool(appContext),
         AlarmTool(appContext, scheduledTaskDao),
@@ -54,8 +59,6 @@ class AppContainer(context: Context) {
 
     val toolRegistry = ToolRegistry(tools)
     val conversationHistory = ConversationHistory(conversationDao)
-    val modelRouter = ModelRouter(appContext)
-    val modelManager = ModelManager(appContext, dataStore, modelRouter)
-    val gemmaClient = GemmaClient(appContext, modelManager)
+    val gemmaClient = GemmaClient(appContext, modelManager, networkChecker)
     val agentLoop = AgentLoop(conversationHistory, toolRegistry, gemmaClient, modelManager)
 }

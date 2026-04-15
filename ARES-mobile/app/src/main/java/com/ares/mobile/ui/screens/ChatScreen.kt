@@ -59,11 +59,14 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -90,10 +93,11 @@ import java.util.Locale
 fun ChatScreen(viewModel: ChatViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    val context = LocalContext.current
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
-            saveLatestCapture(LocalContext.current, bitmap)
+            saveLatestCapture(context, bitmap)
             viewModel.submitMessage("/camera")
         }
     }
@@ -103,7 +107,6 @@ fun ChatScreen(viewModel: ChatViewModel) {
             viewModel.submitMessage(transcript)
         }
     }
-    val context = LocalContext.current
 
     LaunchedEffect(state.messages.size, state.draftResponse) {
         val count = state.messages.size + if (state.draftResponse.isNotBlank() || state.isGenerating) 1 else 0
@@ -137,18 +140,46 @@ fun ChatScreen(viewModel: ChatViewModel) {
         }
 
         // ── Messages ───────────────────────────────────────────────────
-        LazyColumn(
-            state = listState,
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(vertical = 14.dp),
+                .fillMaxWidth(),
         ) {
-            items(state.messages, key = { it.id.takeIf { id -> id != 0L } ?: it.timestamp }) { message ->
-                MessageBubble(message)
+            if (state.messages.isEmpty() && !state.isGenerating) {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("⬡", fontSize = 44.sp, color = NeonRed.copy(alpha = 0.4f))
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "ARES MOBILE",
+                        color = NeonRed.copy(alpha = 0.5f),
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 4.sp,
+                    )
+                    Text(
+                        state.modelHeadline,
+                        color = TextMuted,
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
             }
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(vertical = 14.dp),
+            ) {
+                items(state.messages, key = { it.id.takeIf { id -> id != 0L } ?: it.timestamp }) { message ->
+                    MessageBubble(message)
+                }
             if (state.draftResponse.isNotBlank()) {
                 item {
                     MessageBubble(
@@ -167,6 +198,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 }
             }
         }
+        } // end Box
 
         // ── Quick actions ──────────────────────────────────────────────
         QuickActionsBar(
@@ -375,19 +407,16 @@ private fun AresChatInput(
 // Extension for single-side border
 private fun Modifier.border(bottom: Dp? = null, top: Dp? = null, color: androidx.compose.ui.graphics.Color): Modifier {
     val dp = bottom ?: top ?: return this
-    return drawBehind {
+    return then(drawBehind {
         val y = if (bottom != null) size.height else 0f
         drawLine(
             color = color,
-            start = androidx.compose.ui.geometry.Offset(0f, y),
-            end = androidx.compose.ui.geometry.Offset(size.width, y),
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
             strokeWidth = dp.toPx(),
         )
-    }
+    })
 }
-
-private fun Modifier.drawBehind(onDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit): Modifier =
-    this.then(androidx.compose.ui.draw.drawBehind(onDraw))
 
 private fun saveLatestCapture(context: Context, bitmap: Bitmap) {
     val dir = File(context.filesDir, "captures").also { it.mkdirs() }

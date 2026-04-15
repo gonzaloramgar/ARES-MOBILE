@@ -17,11 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.BlurMaskFilter
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -37,6 +36,11 @@ import com.ares.mobile.ui.theme.SurfaceVariantDark
 import com.ares.mobile.ui.theme.TextAres
 import com.ares.mobile.ui.theme.TextMuted
 import com.ares.mobile.ui.theme.TextPrimary
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
 
 @Composable
 fun MessageBubble(
@@ -46,12 +50,16 @@ fun MessageBubble(
     val isUser = message.role == MessageRole.User
     val isAssistant = message.role == MessageRole.Assistant || message.role == MessageRole.Tool
 
+    val userShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 4.dp)
+    val aresShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp)
+    val shape = if (isUser) userShape else aresShape
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
         Column(
-            modifier = Modifier.widthIn(max = 300.dp),
+            modifier = Modifier.widthIn(max = 290.dp),
             horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
         ) {
             if (isAssistant) {
@@ -65,25 +73,14 @@ fun MessageBubble(
                 )
             }
 
-            val userShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 4.dp)
-            val aresShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp)
-            val shape = if (isUser) userShape else aresShape
-
             Box(
                 modifier = Modifier
                     .then(
-                        if (isAssistant) Modifier.aresGlow(NeonRed.copy(alpha = 0.07f), 14.dp)
+                        if (isAssistant) Modifier.aresGlow(NeonRed.copy(alpha = 0.06f), 12.dp)
                         else Modifier
                     )
-                    .background(
-                        color = if (isUser) SurfaceDark else SurfaceVariantDark,
-                        shape = shape,
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = if (isUser) BorderSubtle else NeonRedBorder,
-                        shape = shape,
-                    )
+                    .background(if (isUser) SurfaceDark else SurfaceVariantDark, shape)
+                    .border(1.dp, if (isUser) BorderSubtle else NeonRedBorder, shape)
                     .padding(horizontal = 14.dp, vertical = 10.dp),
             ) {
                 Text(
@@ -94,43 +91,52 @@ fun MessageBubble(
                 )
             }
 
-            if (!message.toolName.isNullOrBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier
-                        .background(
-                            color = SurfaceVariantDark,
-                            shape = RoundedCornerShape(8.dp),
+            // Timestamp + tool badge row
+            Row(
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 3.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (!message.toolName.isNullOrBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .background(SurfaceVariantDark, RoundedCornerShape(6.dp))
+                            .border(1.dp, NeonRedBorder, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("⚙", fontSize = 8.sp, color = NeonRed.copy(alpha = 0.7f))
+                        Text(
+                            text = message.toolName.lowercase(),
+                            fontSize = 8.sp,
+                            color = TextMuted,
+                            fontFamily = FontFamily.Monospace,
                         )
-                        .border(1.dp, NeonRedBorder, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("⚙", fontSize = 9.sp, color = NeonRed)
-                    Text(
-                        text = message.toolName.lowercase(),
-                        fontSize = 9.sp,
-                        color = TextMuted,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 0.5.sp,
-                    )
+                    }
                 }
+                Text(
+                    text = timeFmt.format(Date(message.timestamp)),
+                    fontSize = 9.sp,
+                    color = TextMuted,
+                    fontFamily = FontFamily.Monospace,
+                )
             }
         }
     }
 }
 
 fun Modifier.aresGlow(color: Color, radius: Dp): Modifier = drawBehind {
-    drawIntoCanvas { canvas ->
-        val paint = Paint().asFrameworkPaint().apply {
-            isAntiAlias = true
-            this.color = android.graphics.Color.TRANSPARENT
-            setShadowLayer(radius.toPx(), 0f, 0f, color.toArgb())
-            maskFilter = BlurMaskFilter(radius.toPx(), BlurMaskFilter.Blur.NORMAL)
-        }
-        canvas.nativeCanvas.drawRoundRect(
-            0f, 0f, size.width, size.height, 18.dp.toPx(), 18.dp.toPx(), paint,
+    val rPx = radius.toPx()
+    val layers = 7
+    repeat(layers) { i ->
+        val spread = rPx * (i + 1) / layers.toFloat()
+        val alpha = color.alpha * (1f - i.toFloat() / layers) * 0.35f
+        drawRoundRect(
+            color = color.copy(alpha = alpha),
+            topLeft = Offset(-spread, -spread),
+            size = Size(size.width + spread * 2f, size.height + spread * 2f),
+            cornerRadius = CornerRadius(18.dp.toPx() + spread, 18.dp.toPx() + spread),
         )
     }
 }

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ares.mobile.ai.ModelInstallState
 import com.ares.mobile.ai.ModelPreference
@@ -49,7 +50,9 @@ import com.ares.mobile.viewmodel.SettingsViewModel
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var hfTokenInput by remember { mutableStateOf("") }
+    var geminiKeyInput by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -139,11 +142,64 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             AresFilledButton(
                 label = if (state.isInstalling) "Instalando..." else "Descargar / reinstalar",
                 enabled = !state.isInstalling,
-            ) { viewModel.installSelectedModel() }
+            ) { viewModel.installSelectedModel(context) }
             AresFilledButton(
                 label = "Eliminar modelo local",
                 enabled = state.installState is ModelInstallState.Ready,
             ) { viewModel.removeInstalledModel() }
+        }
+
+        // ── Gemini API key ─────────────────────────────────────────────
+        AresCard(title = "API de Gemini (online)") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (state.geminiKeyConfigured) "Clave configurada ✓" else "Sin clave — modo local",
+                    color = if (state.geminiKeyConfigured) NeonRed else TextSecondary,
+                    fontSize = 11.sp,
+                )
+                Text(
+                    text = if (state.isOnline) "● Online" else "○ Offline",
+                    color = if (state.isOnline) NeonRed else TextMuted,
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+            Text(
+                "Con clave API usa Gemini Flash (gratis) para respuestas y análisis de imágenes. Sin ella solo funciona el modelo local.",
+                color = TextMuted,
+                fontSize = 10.sp,
+                lineHeight = 14.sp,
+            )
+            BasicTextField(
+                value = geminiKeyInput,
+                onValueChange = { geminiKeyInput = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(BackgroundDeep, RoundedCornerShape(10.dp))
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                textStyle = LocalTextStyle.current.copy(color = TextPrimary, fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+                cursorBrush = SolidColor(NeonRed),
+                singleLine = true,
+                decorationBox = { inner ->
+                    if (geminiKeyInput.isEmpty()) Text("AIza...", color = TextMuted, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                    inner()
+                },
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AresFilledButton("Guardar clave", modifier = Modifier.weight(1f)) {
+                    viewModel.setGeminiApiKey(geminiKeyInput)
+                    geminiKeyInput = ""
+                }
+                AresFilledButton("Quitar", modifier = Modifier.weight(1f)) {
+                    viewModel.setGeminiApiKey("")
+                    geminiKeyInput = ""
+                }
+            }
         }
 
         // ── HF token ──────────────────────────────────────────────────
@@ -187,7 +243,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 }
 
 @Composable
-private fun AresCard(title: String, content: @Composable Column.() -> Unit) {
+private fun AresCard(title: String, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

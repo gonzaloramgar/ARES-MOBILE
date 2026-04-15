@@ -27,7 +27,10 @@ class AresViewModelFactory(
             }
 
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
-                SettingsViewModel(modelManager = container.modelManager) as T
+                SettingsViewModel(
+                    modelManager = container.modelManager,
+                    networkChecker = container.networkChecker,
+                ) as T
             }
 
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

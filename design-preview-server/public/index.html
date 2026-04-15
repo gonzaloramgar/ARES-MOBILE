@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARES Design Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0000 100%);
+            color: #ccc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #ff2020;
+            text-shadow: 0 0 20px rgba(255, 32, 32, 0.3);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .info {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+
+        .variants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .variant-card {
+            background: rgba(20, 20, 20, 0.7);
+            border: 1px solid rgba(255, 32, 32, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .variant-card:hover {
+            border-color: rgba(255, 32, 32, 0.5);
+            box-shadow: 0 0 20px rgba(255, 32, 32, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .variant-header {
+            margin-bottom: 20px;
+        }
+
+        .variant-title {
+            color: #ff9090;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .variant-description {
+            color: #888;
+            font-size: 0.95em;
+        }
+
+        .preview-container {
+            background: rgba(10, 10, 10, 0.5);
+            border: 1px solid rgba(255, 32, 32, 0.15);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Minimal Style */
+        .composer-minimal {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .composer-minimal input {
+            flex: 1;
+            background: #0d0d0d;
+            border: 1px solid #1f1f1f;
+            color: #ccc;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .composer-minimal input:focus {
+            border-color: #ff2020;
+        }
+
+        .btn-send {
+            background: #ff2020;
+            color: #000;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .btn-send:hover {
+            background: #ff4040;
+            box-shadow: 0 0 15px rgba(255, 32, 32, 0.4);
+        }
+
+        /* ChatGPT Style */
+        .composer-chatgpt {
+            background: #0d0d0d;
+            border: 1px solid #4d4d4d;
+            border-radius: 24px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .composer-chatgpt:focus-within {
+            border-color: #ff2020;
+            box-shadow: 0 0 20px rgba(255, 32, 32, 0.1);
+        }
+
+        .composer-chatgpt input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #ccc;
+            outline: none;
+            font-size: 0.95em;
+        }
+
+        .composer-chatgpt input::placeholder {
+            color: #666;
+        }
+
+        /* Glassmorphism */
+        .composer-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 14px 18px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        .composer-glass input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            outline: none;
+            font-size: 0.95em;
+        }
+
+        .composer-glass input::placeholder {
+            color: #999;
+        }
+
+        /* Neon ARES */
+        .composer-neon {
+            background: linear-gradient(135deg, rgba(255, 32, 32, 0.05) 0%, rgba(139, 0, 0, 0.05) 100%);
+            border: 2px solid #ff2020;
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(255, 32, 32, 0.2);
+        }
+
+        .composer-neon input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #ff9090;
+            outline: none;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .composer-neon input::placeholder {
+            color: #8b0000;
+        }
+
+        .btn-neon {
+            background: transparent;
+            border: 1px solid #ff2020;
+            color: #ff2020;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-neon:hover {
+            background: #ff2020;
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 32, 32, 0.6);
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 32, 32, 0.1);
+            justify-content: flex-end;
+        }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid #4d4d4d;
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            border-color: #ff2020;
+            color: #ff2020;
+        }
+
+        .code-section {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            border: 1px solid rgba(255, 32, 32, 0.1);
+        }
+
+        .code-section h4 {
+            color: #ff9090;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-section code {
+            color: #888;
+            font-size: 0.8em;
+            display: block;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .controls {
+            margin-top: 40px;
+            padding: 24px;
+            background: rgba(20, 20, 20, 0.5);
+            border: 1px solid rgba(255, 32, 32, 0.2);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .controls h3 {
+            color: #ff9090;
+            margin-bottom: 16px;
+            font-size: 1.2em;
+        }
+
+        .btn-control {
+            background: #ff2020;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-control:hover {
+            background: #ff4040;
+            box-shadow: 0 0 20px rgba(255, 32, 32, 0.4);
+        }
+
+        .status {
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .variants-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ ARES Design Preview</h1>
+            <p class="subtitle">Sugerencias visuales de diseño para la app móvil</p>
+            <p class="info">Variantes interactivas del chat y componentes de UI</p>
+            <p style="margin-top: 15px;">
+                <a href="/tabs-designer" style="color: #ff5050; text-decoration: none; font-weight: 600; margin-right: 20px;">→ Diseño por pestaña</a>
+                <a href="/neon" style="color: #ff7070; text-decoration: none; font-weight: 500; margin-right: 20px;">→ Ver Neon ARES Variaciones</a>
+                <a href="/compare" style="color: #ff9090; text-decoration: none; font-weight: 500;">→ Ver análisis detallado</a>
+            </p>
+        </header>
+
+        <div class="variants-grid">
+            <!-- Minimal Variant -->
+            <div class="variant-card">
+                <div class="variant-header">
+                    <div class="variant-title">Minimal</div>
+                    <div class="variant-description">Campo limpio y botón de envío simple</div>
+                </div>
+                <div class="preview-container">
+                    <div class="composer-minimal">
+                        <input type="text" placeholder="Escribe tu mensaje...">
+                        <button class="btn-send">→</button>
+                    </div>
+                </div>
+                <div class="code-section">
+                    <h4>Características</h4>
+                    <code>• Row layout horizontal
+• Input + SendButton
+• Espaciado mínimo
+• Border sutil</code>
+                </div>
+            </div>
+
+            <!-- ChatGPT Style -->
+            <div class="variant-card">
+                <div class="variant-header">
+                    <div class="variant-title">ChatGPT Style</div>
+                    <div class="variant-description">Barra redondeada estilo ChatGPT clásico</div>
+                </div>
+                <div class="preview-container">
+                    <div class="composer-chatgpt">
+                        <input type="text" placeholder="Escribe a ARES...">
+                        <button class="btn-send">→</button>
+                    </div>
+                </div>
+                <div class="code-section">
+                    <h4>Características</h4>
+                    <code>• Border-radius: 24px
+• Fondo oscuro sutil
+• Enfoque en border
+• Diseño probado</code>
+                </div>
+            </div>
+
+            <!-- Glassmorphism -->
+            <div class="variant-card">
+                <div class="variant-header">
+                    <div class="variant-title">Glassmorphism</div>
+                    <div class="variant-description">Efecto de vidrio frosted moderno</div>
+                </div>
+                <div class="preview-container">
+                    <div class="composer-glass">
+                        <input type="text" placeholder="Tu mensaje aquí...">
+                        <button class="btn-send">→</button>
+                    </div>
+                </div>
+                <div class="code-section">
+                    <h4>Características</h4>
+                    <code>• Backdrop blur: 20px
+• Transparencia controlada
+• Border sutil
+• Efecto premium</code>
+                </div>
+            </div>
+
+            <!-- Neon ARES -->
+            <div class="variant-card">
+                <div class="variant-header">
+                    <div class="variant-title">Neon ARES</div>
+                    <div class="variant-description">Estilo neon rojo característico de ARES</div>
+                </div>
+                <div class="preview-container">
+                    <div class="composer-neon">
+                        <input type="text" placeholder="Comando ARES...">
+                        <button class="btn-neon">ENVIAR</button>
+                    </div>
+                </div>
+                <div class="code-section">
+                    <h4>Características</h4>
+                    <code>• Border rojo brillante
+• Gradient background
+• Glow effect
+• Identidad ARES</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h3>Selecciona tu favorito para implementar</h3>
+            <button class="btn-control" onclick="selectVariant('minimal')">→ Minimal</button>
+            <button class="btn-control" onclick="selectVariant('chatgpt')">→ ChatGPT</button>
+            <button class="btn-control" onclick="selectVariant('glass')">→ Glass</button>
+            <button class="btn-control" onclick="selectVariant('neon')">→ Neon</button>
+            <div class="status" id="status">Selecciona una variante para ver detalles de implementación</div>
+        </div>
+    </div>
+
+    <script>
+        function selectVariant(variant) {
+            const details = {
+                minimal: {
+                    name: 'Minimal',
+                    file: 'ChatScreen.kt',
+                    location: 'Row(horizontalArrangement = Arrangement.spacedBy(8.dp))',
+                    notes: 'Implementación actual, ideal para Android'
+                },
+                chatgpt: {
+                    name: 'ChatGPT Style',
+                    file: 'ChatScreen.kt',
+                    location: 'Surface(shape = RoundedCornerShape(24.dp))',
+                    notes: 'Cambiar RoundedCornerShape a 28dp para más redondeado'
+                },
+                glass: {
+                    name: 'Glassmorphism',
+                    file: 'ChatScreen.kt',
+                    location: 'Surface(modifier = Modifier.blur(16.dp))',
+                    notes: 'Requiere composable Modifier.blur() - Compose 1.4+'
+                },
+                neon: {
+                    name: 'Neon ARES',
+                    file: 'ChatScreen.kt',
+                    location: 'Border(BorderStroke(2.dp, #FF2020))',
+                    notes: 'Usa colores existentes del tema - perfecto para la identidad'
+                }
+            };
+
+            const info = details[variant];
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                ✓ Seleccionado: <strong>${info.name}</strong><br>
+                📝 Archivo: ${info.file}<br>
+                🎯 Composable: ${info.location}<br>
+                💡 ${info.notes}
+            `;
+        }
+
+        // Auto-select neon on load
+        selectVariant('neon');
+    </script>
+</body>
+</html>

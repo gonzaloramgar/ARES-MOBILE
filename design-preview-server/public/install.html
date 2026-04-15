@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARES - Instalar Node.js</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0000 100%);
+            color: #ccc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2em;
+            color: #ff2020;
+            text-shadow: 0 0 20px rgba(255, 32, 32, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1em;
+        }
+
+        .error-box {
+            background: rgba(255, 32, 32, 0.1);
+            border: 2px solid #ff2020;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .error-title {
+            color: #ff2020;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .error-text {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .steps {
+            background: rgba(20, 20, 20, 0.7);
+            border: 1px solid rgba(255, 32, 32, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .steps h2 {
+            color: #ff9090;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .step {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 32, 32, 0.1);
+        }
+
+        .step:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .step-number {
+            background: #ff2020;
+            color: #000;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .step-title {
+            color: #ff9090;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .step-description {
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .step-image {
+            background: rgba(10, 10, 10, 0.5);
+            border: 1px solid rgba(255, 32, 32, 0.1);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+            color: #888;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #ff2020;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #ff4040;
+            box-shadow: 0 0 20px rgba(255, 32, 32, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 32, 32, 0.1);
+            color: #ff9090;
+            border: 1px solid #ff2020;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 32, 32, 0.2);
+        }
+
+        .checklist {
+            background: rgba(10, 10, 10, 0.3);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .checklist-item {
+            padding: 8px 0;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist-item:before {
+            content: "□";
+            color: #ff9090;
+            font-weight: bold;
+            font-size: 1.2em;
+            width: 20px;
+        }
+
+        .checklist-item.completed:before {
+            content: "✓";
+            color: #7cfc00;
+        }
+
+        .note {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 3px solid #ff9800;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            color: #ffa726;
+            font-size: 0.95em;
+        }
+
+        .success-box {
+            background: rgba(124, 252, 0, 0.1);
+            border: 2px solid #7cfc00;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .success-box.show {
+            display: block;
+        }
+
+        .success-title {
+            color: #7cfc00;
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .success-text {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .steps {
+                padding: 20px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ ARES Design Preview</h1>
+            <p class="subtitle">Necesitas instalar Node.js para continuar</p>
+        </header>
+
+        <div class="error-box">
+            <div class="error-title">⚠️ Node.js no detectado</div>
+            <div class="error-text">
+                El servidor ARES Design Preview requiere Node.js para funcionar.
+                Sigue los pasos abajo para instalarlo.
+            </div>
+        </div>
+
+        <div class="steps">
+            <h2>Instalación Paso a Paso</h2>
+
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-title">Descargar Node.js</div>
+                <div class="step-description">
+                    Haz clic en el botón de abajo para descargar Node.js versión LTS (Long Term Support).
+                </div>
+                <div class="button-group">
+                    <a href="https://nodejs.org" class="btn btn-primary" target="_blank">
+                        ↓ Descargar Node.js LTS
+                    </a>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-title">Ejecutar el Instalador</div>
+                <div class="step-description">
+                    Una vez descargado, abre el archivo y sigue el asistente de instalación.
+                </div>
+                <div class="step-image">
+                    Busca en Descargas: node-vXX.XX.XX-x64.msi
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-title">Configuración IMPORTANTE ⭐</div>
+                <div class="step-description">
+                    Durante la instalación, asegúrate de que estas opciones estén marcadas:
+                </div>
+                <div class="checklist">
+                    <div class="checklist-item">
+                        ☑ Add to PATH (MUY IMPORTANTE)
+                    </div>
+                    <div class="checklist-item">
+                        ☑ Automatically install the necessary tools...
+                    </div>
+                </div>
+                <div class="note">
+                    ⚠️ Si NO marcas "Add to PATH", no funcionará. Vuelve a correr el instalador y marca esta opción.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-title">Reiniciar la Computadora</div>
+                <div class="step-description">
+                    Después de completar la instalación, REINICIA la computadora para que el PATH se actualice.
+                </div>
+                <div class="note">
+                    Este paso es crítico. Sin reiniciar, Windows no reconocerá Node.js.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">5</div>
+                <div class="step-title">Ejecutar el Servidor de Nuevo</div>
+                <div class="step-description">
+                    Después de reiniciar, vuelve a hacer doble clic en <strong>start-server.bat</strong>
+                </div>
+                <div class="step-image">
+                    C:\Users\grg30\Desktop\PROYECTOS\ProyectoARES\design-preview-server\start-server.bat
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">6</div>
+                <div class="step-title">Abre el Navegador</div>
+                <div class="step-description">
+                    Si todo va bien, verás este mensaje en la terminal:
+                </div>
+                <div class="step-image">
+                    [OK] Iniciando servidor...<br>
+                    [*] Abre en el navegador: http://localhost:3000
+                </div>
+                <div class="button-group" style="margin-top: 20px;">
+                    <a href="http://localhost:3000" class="btn btn-secondary">
+                        → Ir a http://localhost:3000
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: rgba(20, 20, 20, 0.5); border: 1px solid rgba(255, 32, 32, 0.2); border-radius: 8px; padding: 20px; margin-top: 30px;">
+            <h3 style="color: #ff9090; margin-bottom: 15px;">Verificación Rápida</h3>
+            <p style="color: #aaa; margin-bottom: 15px;">
+                Si quieres verificar que Node.js está instalado correctamente, abre PowerShell o CMD y corre:
+            </p>
+            <div style="background: #000; padding: 15px; border-radius: 6px; color: #7cfc00; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                node --version<br>
+                npm --version
+            </div>
+            <p style="color: #aaa; margin-top: 15px; font-size: 0.9em;">
+                Deberías ver números de versión (ej: v20.10.0)
+            </p>
+        </div>
+
+        <div class="button-group" style="justify-content: center; margin-top: 40px;">
+            <a href="/" class="btn btn-secondary">
+                ← Volver al menú
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Intenta conectar al servidor cada 2 segundos
+        setInterval(function() {
+            fetch('http://localhost:3000/api/design-variants')
+                .then(r => r.json())
+                .then(() => {
+                    // Servidor está corriendo, redirige
+                    window.location.href = 'http://localhost:3000';
+                })
+                .catch(() => {
+                    // Servidor no responde, continúa esperando
+                });
+        }, 2000);
+    </script>
+</body>
+</html>

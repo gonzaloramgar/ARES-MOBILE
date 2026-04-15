@@ -1,8 +1,9 @@
 package com.ares.mobile.ui.navigation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Memory
@@ -93,10 +94,14 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     tonalElevation = 0.dp,
                     modifier = Modifier
                         .background(BackgroundDeep)
-                        .border(
-                            width = 1.dp,
-                            color = NeonRedBorder,
-                        ),
+                        .drawBehind {
+                            drawLine(
+                                color = NeonRedBorder,
+                                start = Offset(0f, 0f),
+                                end = Offset(size.width, 0f),
+                                strokeWidth = 1.dp.toPx(),
+                            )
+                        },
                 ) {
                     mainDestinations.forEach { item ->
                         val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true

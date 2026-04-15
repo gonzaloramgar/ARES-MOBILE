@@ -42,6 +42,7 @@ class ModelManager(
         val keyInstalledModelKey = stringPreferencesKey("installed_model_key")
         val keyExpectedSha256 = stringPreferencesKey("model_sha256")
         val keyHfAccessToken = stringPreferencesKey("hf_access_token")
+        val keyGeminiApiKey = stringPreferencesKey("gemini_api_key")
     }
 
     val settingsFlow: Flow<ModelSettings> = dataStore.data.map { preferences ->
@@ -53,6 +54,7 @@ class ModelManager(
             modelPath = preferences[keyModelPath],
             expectedSha256 = preferences[keyExpectedSha256],
             hfAccessToken = preferences[keyHfAccessToken],
+            geminiApiKey = preferences[keyGeminiApiKey],
         )
     }
 
@@ -64,6 +66,14 @@ class ModelManager(
             } else {
                 preferences[keyHfAccessToken] = trimmed
             }
+        }
+    }
+
+    suspend fun setGeminiApiKey(key: String) {
+        dataStore.edit { preferences ->
+            val trimmed = key.trim()
+            if (trimmed.isBlank()) preferences.remove(keyGeminiApiKey)
+            else preferences[keyGeminiApiKey] = trimmed
         }
     }
 
@@ -306,4 +316,5 @@ data class ModelSettings(
     val modelPath: String? = null,
     val expectedSha256: String? = null,
     val hfAccessToken: String? = null,
+    val geminiApiKey: String? = null,
 )

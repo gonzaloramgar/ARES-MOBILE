@@ -3,6 +3,15 @@ bin/
 obj/
 Build/
 releases/
+**/build/
+**/out/
+**/dist/
+
+# Android / Gradle builds
+ARES-mobile/.gradle/
+ARES-mobile/build/
+ARES-mobile/app/build/
+ARES-mobile/**/build/
 
 # ─── Visual Studio / Rider ───────────────────────────────────────
 *.user
@@ -10,11 +19,31 @@ releases/
 .vs/
 *.DotSettings.user
 
+# IDE / local workspace metadata
+.idea/
+*.iml
+.vscode/
+
 # ─── Runtime data (generada por la app, local a cada usuario) ────
 # Toda la carpeta data/ se genera al iniciar: config, historial,
 # herramientas escaneadas, voces TTS descargadas, logs y crashes.
 ARES-desktop/AresAssistant/data/
-ARES-mobile/.gradle/
+
+# Android local machine files
+ARES-mobile/local.properties
+ARES-mobile/.kotlin/
+captures/
+
+# Node / design preview server local artifacts
+design-preview-server/node_modules/
+design-preview-server/logs/
+design-preview-server/*.log
+design-preview-server/npm-debug.log*
+design-preview-server/yarn-debug.log*
+design-preview-server/yarn-error.log*
+design-preview-server/.env
+design-preview-server/.env.local
+design-preview-server/data/
 
 # ─── OS ──────────────────────────────────────────────────────────
 .DS_Store
