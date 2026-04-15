@@ -35,15 +35,7 @@ ARES-mobile/.kotlin/
 captures/
 
 # Node / design preview server local artifacts
-design-preview-server/node_modules/
-design-preview-server/logs/
-design-preview-server/*.log
-design-preview-server/npm-debug.log*
-design-preview-server/yarn-debug.log*
-design-preview-server/yarn-error.log*
-design-preview-server/.env
-design-preview-server/.env.local
-design-preview-server/data/
+design-preview-server/
 
 # ─── OS ──────────────────────────────────────────────────────────
 .DS_Store
