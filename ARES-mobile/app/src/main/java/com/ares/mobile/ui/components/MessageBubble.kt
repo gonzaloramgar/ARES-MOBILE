@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,15 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.mobile.agent.ChatMessage
 import com.ares.mobile.agent.MessageRole
-import com.ares.mobile.ui.theme.BorderGlow
-import com.ares.mobile.ui.theme.BorderSubtle
 import com.ares.mobile.ui.theme.NeonRed
-import com.ares.mobile.ui.theme.NeonRedBorder
-import com.ares.mobile.ui.theme.SurfaceDark
-import com.ares.mobile.ui.theme.SurfaceVariantDark
-import com.ares.mobile.ui.theme.TextAres
-import com.ares.mobile.ui.theme.TextMuted
-import com.ares.mobile.ui.theme.TextPrimary
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -47,6 +40,7 @@ fun MessageBubble(
     message: ChatMessage,
     modifier: Modifier = Modifier,
 ) {
+    val colors = MaterialTheme.colorScheme
     val isUser = message.role == MessageRole.User
     val isAssistant = message.role == MessageRole.Assistant || message.role == MessageRole.Tool
 
@@ -65,9 +59,9 @@ fun MessageBubble(
             if (isAssistant) {
                 Text(
                     text = "ARES",
-                    color = NeonRed.copy(alpha = 0.45f),
+                    color = colors.primary.copy(alpha = 0.6f),
                     fontSize = 9.sp,
-                    letterSpacing = 1.sp,
+                    letterSpacing = 1.2.sp,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(start = 4.dp, bottom = 3.dp),
                 )
@@ -76,18 +70,20 @@ fun MessageBubble(
             Box(
                 modifier = Modifier
                     .then(
-                        if (isAssistant) Modifier.aresGlow(NeonRed.copy(alpha = 0.06f), 12.dp)
+                        if (isAssistant) Modifier.aresGlow(colors.primary.copy(alpha = 0.06f), 12.dp)
                         else Modifier
                     )
-                    .background(if (isUser) SurfaceDark else SurfaceVariantDark, shape)
-                    .border(1.dp, if (isUser) BorderSubtle else NeonRedBorder, shape)
+                    .background(if (isUser) colors.surface else colors.surfaceVariant, shape)
+                    .border(1.dp, if (isUser) colors.outline else colors.outlineVariant, shape)
                     .padding(horizontal = 14.dp, vertical = 10.dp),
             ) {
                 Text(
                     text = message.content,
-                    color = if (isUser) TextPrimary else TextAres,
-                    fontSize = 13.sp,
-                    lineHeight = 19.sp,
+                    color = if (isUser) colors.onSurface else colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        lineHeight = 21.sp,
+                    ),
                 )
             }
 
@@ -100,17 +96,17 @@ fun MessageBubble(
                 if (!message.toolName.isNullOrBlank()) {
                     Row(
                         modifier = Modifier
-                            .background(SurfaceVariantDark, RoundedCornerShape(6.dp))
-                            .border(1.dp, NeonRedBorder, RoundedCornerShape(6.dp))
+                            .background(colors.surfaceVariant, RoundedCornerShape(6.dp))
+                            .border(1.dp, colors.outlineVariant, RoundedCornerShape(6.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp),
                         horizontalArrangement = Arrangement.spacedBy(3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("⚙", fontSize = 8.sp, color = NeonRed.copy(alpha = 0.7f))
+                        Text("⚙", fontSize = 8.sp, color = colors.primary.copy(alpha = 0.7f))
                         Text(
                             text = message.toolName.lowercase(),
                             fontSize = 8.sp,
-                            color = TextMuted,
+                            color = colors.onSurfaceVariant,
                             fontFamily = FontFamily.Monospace,
                         )
                     }
@@ -118,7 +114,7 @@ fun MessageBubble(
                 Text(
                     text = timeFmt.format(Date(message.timestamp)),
                     fontSize = 9.sp,
-                    color = TextMuted,
+                    color = colors.onSurfaceVariant,
                     fontFamily = FontFamily.Monospace,
                 )
             }

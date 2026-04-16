@@ -5,11 +5,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -37,11 +38,6 @@ import com.ares.mobile.ui.screens.FirstRunScreen
 import com.ares.mobile.ui.screens.MemoryScreen
 import com.ares.mobile.ui.screens.SettingsScreen
 import com.ares.mobile.ui.screens.TasksScreen
-import com.ares.mobile.ui.theme.BackgroundDeep
-import com.ares.mobile.ui.theme.NeonRed
-import com.ares.mobile.ui.theme.NeonRedBorder
-import com.ares.mobile.ui.theme.SurfaceVariantDark
-import com.ares.mobile.ui.theme.TextMuted
 import com.ares.mobile.viewmodel.AresViewModelFactory
 import com.ares.mobile.viewmodel.ChatViewModel
 import com.ares.mobile.viewmodel.MemoryViewModel
@@ -55,14 +51,15 @@ private data class DestinationItem(
 )
 
 private val mainDestinations = listOf(
-    DestinationItem("chat", "Chat", Icons.Default.Chat),
+    DestinationItem("chat", "Chat", Icons.AutoMirrored.Filled.Chat),
     DestinationItem("memory", "Memoria", Icons.Default.Memory),
     DestinationItem("tasks", "Tareas", Icons.Default.Schedule),
-    DestinationItem("settings", "Config", Icons.Default.Settings),
+    DestinationItem("settings", "Ajustes", Icons.Default.Settings),
 )
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
     val application = LocalContext.current.applicationContext as AresApplication
     val viewModelFactory = remember(application) { AresViewModelFactory(application.appContainer) }
 
@@ -86,17 +83,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     Scaffold(
         modifier = modifier,
-        containerColor = BackgroundDeep,
+        containerColor = colors.background,
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
-                    containerColor = BackgroundDeep,
+                    containerColor = colors.background,
                     tonalElevation = 0.dp,
                     modifier = Modifier
-                        .background(BackgroundDeep)
+                        .background(colors.background)
                         .drawBehind {
                             drawLine(
-                                color = NeonRedBorder,
+                                color = colors.outlineVariant,
                                 start = Offset(0f, 0f),
                                 end = Offset(size.width, 0f),
                                 strokeWidth = 1.dp.toPx(),
@@ -121,13 +118,13 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                                     modifier = Modifier,
                                 )
                             },
-                            label = { Text(item.label, fontSize = 9.sp) },
+                            label = { Text(item.label, fontSize = 11.sp) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = NeonRed,
-                                selectedTextColor = NeonRed,
-                                unselectedIconColor = TextMuted,
-                                unselectedTextColor = TextMuted,
-                                indicatorColor = SurfaceVariantDark,
+                                selectedIconColor = colors.primary,
+                                selectedTextColor = colors.primary,
+                                unselectedIconColor = colors.onSurfaceVariant,
+                                unselectedTextColor = colors.onSurfaceVariant,
+                                indicatorColor = colors.surfaceVariant,
                             ),
                         )
                     }
@@ -138,7 +135,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         NavHost(
             modifier = Modifier
                 .padding(paddingValues)
-                .background(BackgroundDeep),
+                .background(colors.background),
             navController = navController,
             startDestination = if (settingsState.firstRunCompleted) "chat" else "first-run",
         ) {

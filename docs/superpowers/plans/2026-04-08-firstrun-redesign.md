@@ -1,3 +1,33 @@
+# First Run Screen Redesign Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Rewrite `FirstRunScreen.kt` with a faithful port of the ARES PC animated radar logo and replace the static model status card with a scanline progress panel.
+
+**Architecture:** All new composables (`AresLogoCanvas`, `ScanlineProgressCard`) are private functions added at the bottom of the same file. `AresFilledButton` and `AresOutlinedButton` are untouched. `FirstRunScreen` body is rewritten to use the new composables.
+
+**Tech Stack:** Jetpack Compose Canvas drawscope, `rememberInfiniteTransition`, `animateFloat`, `BoxWithConstraints`, `PathEffect`, `Brush`.
+
+---
+
+## File Map
+
+| File | Action |
+|---|---|
+| `ARES-mobile/app/src/main/java/com/ares/mobile/ui/screens/FirstRunScreen.kt` | Modify — rewrite `FirstRunScreen` body, add `AresLogoCanvas` and `ScanlineProgressCard` private composables, update imports |
+
+---
+
+## Task 1: Add imports and `AresLogoCanvas` composable
+
+**Files:**
+- Modify: `ARES-mobile/app/src/main/java/com/ares/mobile/ui/screens/FirstRunScreen.kt`
+
+- [ ] **Step 1: Replace the import block at the top of `FirstRunScreen.kt`**
+
+Replace everything from line 1 (`package …`) down to and including the last `import` line with:
+
+```kotlin
 package com.ares.mobile.ui.screens
 
 import android.Manifest
@@ -14,7 +44,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -34,7 +63,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -74,251 +102,11 @@ import com.ares.mobile.viewmodel.SettingsViewModel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+```
 
-private val requestedPermissions = arrayOf(
-    Manifest.permission.CAMERA,
-    Manifest.permission.RECORD_AUDIO,
-    Manifest.permission.ACCESS_FINE_LOCATION,
-    Manifest.permission.POST_NOTIFICATIONS,
-)
+- [ ] **Step 2: Add `AresLogoCanvas` at the bottom of the file (after the last `}` of `AresOutlinedButton`)**
 
-@Composable
-fun FirstRunScreen(
-    onContinue: () -> Unit,
-    viewModel: SettingsViewModel,
-) {
-    val colors = MaterialTheme.colorScheme
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-    ) { }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        colors.background,
-                        colors.surfaceVariant.copy(alpha = 0.5f),
-                        colors.background,
-                    ),
-                ),
-            ),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        // Ambient neon/metallic glow layers for a more cinematic first-run scene.
-        Box(
-            modifier = Modifier
-                .size(320.dp)
-                .offset(x = (-120).dp, y = (-110).dp)
-                .background(
-                    Brush.radialGradient(
-                        listOf(colors.primary.copy(alpha = 0.16f), Color.Transparent),
-                    ),
-                    shape = RoundedCornerShape(160.dp),
-                ),
-        )
-        Box(
-            modifier = Modifier
-                .size(280.dp)
-                .offset(x = 130.dp, y = 260.dp)
-                .background(
-                    Brush.radialGradient(
-                        listOf(colors.primaryContainer.copy(alpha = 0.18f), Color.Transparent),
-                    ),
-                    shape = RoundedCornerShape(140.dp),
-                ),
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Spacer(Modifier.height(20.dp))
-
-            // ── Animated ARES logo ──────────────────────────────────────
-            AresLogoCanvas(sizeDp = 160.dp)
-
-            // ── Title block ─────────────────────────────────────────────
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    "ARES",
-                    style = TextStyle(
-                        color = colors.primary,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 8.sp,
-                        shadow = Shadow(
-                            color = colors.primary.copy(alpha = 0.6f),
-                            offset = Offset.Zero,
-                            blurRadius = 30f,
-                        ),
-                    ),
-                )
-                Text(
-                    "AUTONOMOUS · RESPONSE · ENGINE · SYSTEM",
-                    color = colors.primary.copy(alpha = 0.28f),
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 1.6.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    "on-device AI · Gemma 4",
-                    color = colors.onSurfaceVariant,
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace,
-                )
-            }
-
-            // ── Divider ─────────────────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.65f)
-                    .height(1.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(Color.Transparent, colors.outlineVariant, Color.Transparent),
-                        ),
-                    ),
-            )
-
-            // ── Scanline progress card ───────────────────────────────────
-            ScanlineProgressCard(installState = state.installState)
-
-            // ── Permissions chips ───────────────────────────────────────
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.surface, RoundedCornerShape(14.dp))
-                    .border(1.dp, colors.outline, RoundedCornerShape(14.dp))
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    "PERMISOS",
-                    color = colors.onSurfaceVariant,
-                    fontSize = 8.sp,
-                    letterSpacing = 1.5.sp,
-                    fontFamily = FontFamily.Monospace,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    listOf("📷 Cámara", "🎤 Micro", "📍 GPS", "🔔 Notif.").forEach { label ->
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(colors.background, RoundedCornerShape(8.dp))
-                                .border(1.dp, colors.outline, RoundedCornerShape(8.dp))
-                                .padding(vertical = 5.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                label,
-                                color = colors.onSurfaceVariant,
-                                fontSize = 8.sp,
-                                fontFamily = FontFamily.Monospace,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ── Buttons ─────────────────────────────────────────────────
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                AresOutlinedButton("Conceder permisos") {
-                    permissionLauncher.launch(requestedPermissions)
-                }
-                AresFilledButton(
-                    label = when {
-                        state.isInstalling -> "Descargando..."
-                        state.installState is ModelInstallState.Ready -> "Empezar →"
-                        else -> "Descargar modelo Gemma 4"
-                    },
-                    enabled = !state.isInstalling,
-                ) {
-                    if (state.installState is ModelInstallState.Ready) {
-                        viewModel.markFirstRunCompleted()
-                        onContinue()
-                    } else {
-                        viewModel.installSelectedModel(context)
-                    }
-                }
-                AresFilledButton(label = "Continuar sin modelo →") {
-                    viewModel.markFirstRunCompleted()
-                    onContinue()
-                }
-            }
-
-            Spacer(Modifier.height(20.dp))
-        }
-    }
-}
-
-@Composable
-fun AresFilledButton(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = colors.primaryContainer,
-            contentColor = colors.onPrimaryContainer,
-            disabledContainerColor = colors.surface,
-            disabledContentColor = colors.onSurfaceVariant,
-        ),
-    ) {
-        Text(
-            label,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp,
-            fontFamily = FontFamily.Monospace,
-            letterSpacing = 0.4.sp,
-        )
-    }
-}
-
-@Composable
-private fun AresOutlinedButton(label: String, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            contentColor = colors.primary,
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant),
-    ) {
-        Text(
-            label,
-            fontWeight = FontWeight.Medium,
-            fontSize = 13.sp,
-            fontFamily = FontFamily.Monospace,
-            letterSpacing = 0.3.sp,
-        )
-    }
-}
-
+```kotlin
 @Composable
 private fun AresLogoCanvas(modifier: Modifier = Modifier, sizeDp: Dp = 160.dp) {
     val transition = rememberInfiniteTransition(label = "logo")
@@ -407,7 +195,7 @@ private fun AresLogoCanvas(modifier: Modifier = Modifier, sizeDp: Dp = 160.dp) {
         val gapPx = 3.dp.toPx()
 
         // ── Outer glow ring (pulsing scale) ──────────────────────────────
-        withTransform({ scale(scaleX = pulseScale, scaleY = pulseScale, pivot = Offset(cx, cy)) }) {
+        withTransform({ scale(pulseScale, pivot = Offset(cx, cy)) }) {
             drawCircle(
                 color = red.copy(alpha = 0.22f),
                 radius = r * 0.89f,
@@ -416,7 +204,7 @@ private fun AresLogoCanvas(modifier: Modifier = Modifier, sizeDp: Dp = 160.dp) {
         }
 
         // ── Mid ring (slight pulse) ───────────────────────────────────────
-        withTransform({ scale(scaleX = midPulseScale, scaleY = midPulseScale, pivot = Offset(cx, cy)) }) {
+        withTransform({ scale(midPulseScale, pivot = Offset(cx, cy)) }) {
             drawCircle(color = red.copy(alpha = 0.28f), radius = r * 0.71f, style = Stroke(width = sp))
         }
 
@@ -474,7 +262,7 @@ private fun AresLogoCanvas(modifier: Modifier = Modifier, sizeDp: Dp = 160.dp) {
             drawPath(diamondOuter, color = red.copy(alpha = 0.55f), style = Stroke(width = 1.5.dp.toPx()))
         }
 
-        // ── Diamond inner (filled gradient, CW) ─────────────────────────
+        // ── Diamond inner (filled, CW) ────────────────────────────────────
         withTransform({ rotate(diamondAngle, Offset(cx, cy)) }) {
             val dI = r * 0.235f
             val diamondInner = Path().apply {
@@ -496,26 +284,37 @@ private fun AresLogoCanvas(modifier: Modifier = Modifier, sizeDp: Dp = 160.dp) {
         // ── Orbiting dot 1 (CW, outer orbit) ─────────────────────────────
         val o1Rad = orbit1Angle * PI.toFloat() / 180f
         val o1R = r * 0.80f
-        drawCircle(
-            red.copy(alpha = 0.9f),
-            radius = 3.dp.toPx(),
-            center = Offset(cx + o1R * cos(o1Rad), cy + o1R * sin(o1Rad)),
-        )
+        drawCircle(red.copy(alpha = 0.9f), radius = 3.dp.toPx(), center = Offset(cx + o1R * cos(o1Rad), cy + o1R * sin(o1Rad)))
 
         // ── Orbiting dot 2 (CCW, inner orbit) ────────────────────────────
         val o2Rad = orbit2Angle * PI.toFloat() / 180f
         val o2R = r * 0.585f
-        drawCircle(
-            red.copy(alpha = 0.5f),
-            radius = 2.dp.toPx(),
-            center = Offset(cx + o2R * cos(o2Rad), cy + o2R * sin(o2Rad)),
-        )
+        drawCircle(red.copy(alpha = 0.5f), radius = 2.dp.toPx(), center = Offset(cx + o2R * cos(o2Rad), cy + o2R * sin(o2Rad)))
 
         // ── Center dot ────────────────────────────────────────────────────
         drawCircle(red, radius = 3.5.dp.toPx(), center = Offset(cx, cy))
     }
 }
+```
 
+- [ ] **Step 3: Build to verify no compile errors so far**
+
+```bash
+cd ARES-mobile && ./gradlew :app:compileDebugKotlin 2>&1 | tail -20
+```
+
+Expected: `BUILD SUCCESSFUL` (or only pre-existing warnings, zero new errors).
+
+---
+
+## Task 2: Add `ScanlineProgressCard` composable
+
+**Files:**
+- Modify: `ARES-mobile/app/src/main/java/com/ares/mobile/ui/screens/FirstRunScreen.kt`
+
+- [ ] **Step 1: Add `ScanlineProgressCard` after `AresLogoCanvas` (before the end of the file)**
+
+```kotlin
 @Composable
 private fun ScanlineProgressCard(installState: ModelInstallState) {
     val scanTransition = rememberInfiniteTransition(label = "scan")
@@ -611,3 +410,207 @@ private fun ScanlineProgressCard(installState: ModelInstallState) {
         }
     }
 }
+```
+
+- [ ] **Step 2: Build to verify no compile errors**
+
+```bash
+cd ARES-mobile && ./gradlew :app:compileDebugKotlin 2>&1 | tail -20
+```
+
+Expected: `BUILD SUCCESSFUL`
+
+---
+
+## Task 3: Rewrite `FirstRunScreen` body
+
+**Files:**
+- Modify: `ARES-mobile/app/src/main/java/com/ares/mobile/ui/screens/FirstRunScreen.kt`
+
+- [ ] **Step 1: Replace the `FirstRunScreen` composable body (lines 56–201 in the original file)**
+
+Replace the entire `fun FirstRunScreen(...)` function (keep the private `requestedPermissions` array above it, keep the `AresFilledButton` and `AresOutlinedButton` functions below it) with:
+
+```kotlin
+@Composable
+fun FirstRunScreen(
+    onContinue: () -> Unit,
+    viewModel: SettingsViewModel,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundDeep),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Spacer(Modifier.height(20.dp))
+
+            // ── Animated ARES logo ──────────────────────────────────────
+            AresLogoCanvas(sizeDp = 160.dp)
+
+            // ── Title block ─────────────────────────────────────────────
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    "ARES",
+                    style = TextStyle(
+                        color = NeonRed,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 10.sp,
+                        shadow = Shadow(
+                            color = NeonRed.copy(alpha = 0.6f),
+                            offset = Offset.Zero,
+                            blurRadius = 24f,
+                        ),
+                    ),
+                )
+                Text(
+                    "AUTONOMOUS · RESPONSE · ENGINE · SYSTEM",
+                    color = NeonRed.copy(alpha = 0.20f),
+                    fontSize = 8.sp,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 2.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    "on-device AI · Gemma 4",
+                    color = TextSecondary,
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+
+            // ── Divider ─────────────────────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.65f)
+                    .height(1.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color.Transparent, NeonRedBorder, Color.Transparent),
+                        ),
+                    ),
+            )
+
+            // ── Scanline progress card ───────────────────────────────────
+            ScanlineProgressCard(installState = state.installState)
+
+            // ── Permissions chips ───────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SurfaceDark, RoundedCornerShape(11.dp))
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(11.dp))
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    "PERMISOS",
+                    color = TextMuted,
+                    fontSize = 8.sp,
+                    letterSpacing = 1.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    listOf("📷 Cámara", "🎤 Micro", "📍 GPS", "🔔 Notif.").forEach { label ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(BackgroundDeep, RoundedCornerShape(6.dp))
+                                .border(1.dp, BorderSubtle, RoundedCornerShape(6.dp))
+                                .padding(vertical = 5.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                label,
+                                color = TextSecondary,
+                                fontSize = 7.sp,
+                                fontFamily = FontFamily.Monospace,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Buttons ─────────────────────────────────────────────────
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                AresOutlinedButton("Conceder permisos") {
+                    permissionLauncher.launch(requestedPermissions)
+                }
+                AresFilledButton(
+                    label = when {
+                        state.isInstalling -> "Descargando..."
+                        state.installState is ModelInstallState.Ready -> "Empezar →"
+                        else -> "Descargar modelo Gemma 4"
+                    },
+                    enabled = !state.isInstalling,
+                ) {
+                    if (state.installState is ModelInstallState.Ready) {
+                        viewModel.markFirstRunCompleted()
+                        onContinue()
+                    } else {
+                        viewModel.installSelectedModel(context)
+                    }
+                }
+                AresFilledButton(label = "Continuar sin modelo →") {
+                    viewModel.markFirstRunCompleted()
+                    onContinue()
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+```
+
+- [ ] **Step 2: Full build to confirm everything compiles**
+
+```bash
+cd ARES-mobile && ./gradlew assembleDebug 2>&1 | tail -30
+```
+
+Expected: `BUILD SUCCESSFUL`
+
+- [ ] **Step 3: Commit**
+
+```bash
+cd ARES-mobile && git add app/src/main/java/com/ares/mobile/ui/screens/FirstRunScreen.kt
+git commit -m "feat(mobile): redesign FirstRunScreen with PC-faithful ARES logo and scanline progress panel"
+```
+
+---
+
+## Self-Review Checklist
+
+- [x] **Logo elements**: outer glow ring (pulse), mid ring (pulse), inner ring, dashed ring (rotate), crosshairs, corner ticks, radar ping ×2 (phase offset), diamond outer (CCW outline), diamond inner (CW filled gradient), orbit dot 1 (CW), orbit dot 2 (CCW), center dot — all present.
+- [x] **Scanline card states**: Checking, Missing, Downloading (with %), Ready (100%, no cursor), Error (0%, cursor) — all covered.
+- [x] **Buttons**: Conceder permisos → permission launcher; Descargar/Descargando.../Empezar → calls service or `onContinue()`; Continuar → always calls `onContinue()`. ✓
+- [x] **Imports**: `kotlin.math.cos`, `kotlin.math.sin`, `kotlin.math.PI`, `Offset`, `Shadow`, `PathEffect`, `BoxWithConstraints`, `IntOffset`, `verticalScroll`, `rememberScrollState` all present.
+- [x] **`AresFilledButton` / `AresOutlinedButton`**: unchanged, stay in the same file.
+- [x] **No placeholders**: all code is complete.

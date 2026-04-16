@@ -119,6 +119,20 @@ class ModelManager(
     fun installPreferredModel(): Flow<ModelInstallState> = flow {
         val settings = settingsFlowSnapshot()
         val variant = resolveDesiredVariant()
+
+        // GWOPUS 3.5 is an online Hugging Face model (no local download).
+        if (variant == AresModelVariant.GWOPUS35) {
+            if (settings.hfAccessToken.isNullOrBlank()) {
+                val state = ModelInstallState.Error("Configura token de Hugging Face para usar GWOPUS 3.5 online")
+                transientInstallState.value = state
+                emit(state)
+            } else {
+                transientInstallState.value = null
+                emit(ModelInstallState.Ready(variant, "remote:huggingface/qwen2.5-1.5b", 0L))
+            }
+            return@flow
+        }
+
         val targetFile = defaultModelFile(variant)
         val tempFile = File(targetFile.parentFile, "${variant.taskFileName}.download")
         targetFile.parentFile?.mkdirs()
@@ -237,6 +251,11 @@ class ModelManager(
 
     suspend fun clearInstalledModelFiles() {
         val variant = resolveDesiredVariant()
+        if (variant == AresModelVariant.GWOPUS35) {
+            clearInstalledModel()
+            transientInstallState.value = null
+            return
+        }
         val modelFile = defaultModelFile(variant)
         withContext(Dispatchers.IO) {
             if (modelFile.exists()) {
@@ -251,6 +270,16 @@ class ModelManager(
         emit(ModelInstallState.Checking)
         val settings = settingsFlowSnapshot()
         val variant = modelRouter.decide(settings.preference).variant
+
+        if (variant == AresModelVariant.GWOPUS35) {
+            if (settings.hfAccessToken.isNullOrBlank()) {
+                emit(ModelInstallState.Missing(variant, "Token Hugging Face requerido para GWOPUS 3.5 online"))
+            } else {
+                emit(ModelInstallState.Ready(variant, "remote:huggingface/qwen2.5-1.5b", 0L))
+            }
+            return@flow
+        }
+
         val modelFile = settings.modelPath?.let(::File) ?: defaultModelFile(variant)
         if (!modelFile.exists()) {
             emit(ModelInstallState.Missing(variant, modelFile.absolutePath))
@@ -274,6 +303,22 @@ class ModelManager(
 
     private fun computeInstallState(settings: ModelSettings): ModelInstallState {
         val expectedVariant = modelRouter.decide(settings.preference).variant
+
+        if (expectedVariant == AresModelVariant.GWOPUS35) {
+            return if (settings.hfAccessToken.isNullOrBlank()) {
+                ModelInstallState.Missing(
+                    variant = expectedVariant,
+                    expectedPath = "Configura token de Hugging Face en Ajustes para usar GWOPUS 3.5",
+                )
+            } else {
+                ModelInstallState.Ready(
+                    variant = expectedVariant,
+                    path = "remote:huggingface/qwen2.5-1.5b",
+                    bytes = 0L,
+                )
+            }
+        }
+
         val configuredFile = settings.modelPath?.takeIf { it.isNotBlank() }?.let(::File)
         val defaultFile = defaultModelFile(expectedVariant)
         val file = configuredFile ?: defaultFile

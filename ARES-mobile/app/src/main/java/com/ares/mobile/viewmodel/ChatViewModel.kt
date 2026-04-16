@@ -111,7 +111,13 @@ class ChatViewModel(
     }
 
     private fun buildInstallHint(installState: ModelInstallState): String = when (installState) {
-        is ModelInstallState.Missing -> "Modelo pendiente. Ábrelo en Ajustes para descargarlo."
+        is ModelInstallState.Missing -> {
+            if (installState.variant.key == "gwopus-3.5") {
+                "GWOPUS 3.5 requiere token HF e internet. Configúralo en Ajustes."
+            } else {
+                "Modelo pendiente. Ábrelo en Ajustes para descargarlo."
+            }
+        }
         is ModelInstallState.Ready -> ""
         is ModelInstallState.Downloading -> "Descargando ${installState.variant.displayName}: ${installState.progressPercent}%"
         is ModelInstallState.Error -> "No pude preparar el modelo: ${installState.message}"

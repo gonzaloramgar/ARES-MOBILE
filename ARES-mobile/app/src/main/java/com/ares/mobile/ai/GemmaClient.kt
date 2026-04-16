@@ -66,8 +66,23 @@ class GemmaClient(
 
                 val settings = modelManager.settingsFlow.firstOrNull()
                 val geminiKey = settings?.geminiApiKey
+                val hfToken = settings?.hfAccessToken
+                val useGwopus = settings?.preference == ModelPreference.GWOPUS35
 
-                val baseReply = if (!geminiKey.isNullOrBlank() && networkChecker.isOnline()) {
+                val baseReply = if (useGwopus && !hfToken.isNullOrBlank() && networkChecker.isOnline()) {
+                    // ── Online GWOPUS profile (Qwen on Hugging Face) ────
+                    HuggingFaceClient.generate(
+                        history = history,
+                        systemPrompt = buildSystemPrompt(tools),
+                        hfToken = hfToken,
+                    ) ?: "No pude consultar GWOPUS 3.5 ahora mismo. Revisa token/red o vuelve a Gemma local."
+                } else if (useGwopus && (hfToken.isNullOrBlank() || !networkChecker.isOnline())) {
+                    if (hfToken.isNullOrBlank()) {
+                        "Para usar GWOPUS 3.5 necesitas token de Hugging Face en Ajustes."
+                    } else {
+                        "GWOPUS 3.5 es online y ahora no tengo conexión. Cambia a Gemma local o activa internet."
+                    }
+                } else if (!geminiKey.isNullOrBlank() && networkChecker.isOnline()) {
                     // ── Online: use Gemini API ───────────────────────────
                     GeminiClient.generate(
                         history = history,
@@ -297,7 +312,7 @@ class GemmaClient(
         runCatching {
             val llmInferenceClass = Class.forName("com.google.mediapipe.tasks.genai.llminference.LlmInference")
             val optionsClass = Class.forName("com.google.mediapipe.tasks.genai.llminference.LlmInference\$LlmInferenceOptions")
-            val builder = optionsClass.getMethod("builder").invoke(null)
+            val builder = optionsClass.getMethod("builder").invoke(null) ?: return@runCatching null
 
             builder.invokeIfPresent("setModelPath", String::class.java, modelFile.absolutePath)
             builder.invokeIfPresent("setMaxTokens", Int::class.javaPrimitiveType!!, 1024)

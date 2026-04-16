@@ -17,9 +17,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -27,39 +31,69 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ares.mobile.ui.theme.BackgroundDeep
-import com.ares.mobile.ui.theme.BorderSubtle
-import com.ares.mobile.ui.theme.NeonRed
-import com.ares.mobile.ui.theme.NeonRedBorder
-import com.ares.mobile.ui.theme.SurfaceDark
-import com.ares.mobile.ui.theme.SurfaceVariantDark
-import com.ares.mobile.ui.theme.TextMuted
-import com.ares.mobile.ui.theme.TextPrimary
-import com.ares.mobile.ui.theme.TextSecondary
+import com.ares.mobile.ui.components.AresTabHeroHeader
+import com.ares.mobile.ui.components.ConfirmationDialog
+import com.ares.mobile.ui.theme.AresThemeMetallic
 import com.ares.mobile.viewmodel.TasksViewModel
 import java.text.DateFormat
 import java.util.Date
 
 @Composable
 fun TasksScreen(viewModel: TasksViewModel) {
+    AresThemeMetallic {
+        TasksScreenContent(viewModel)
+    }
+}
+
+@Composable
+private fun TasksScreenContent(viewModel: TasksViewModel) {
+    val colors = MaterialTheme.colorScheme
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val formatter = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+    var taskToDelete by remember { mutableStateOf<Long?>(null) }
+    var taskToDeleteTitle by remember { mutableStateOf("") }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    // Confirmation dialog for deleting task
+    ConfirmationDialog(
+        isVisible = showDeleteConfirmation,
+        title = "Eliminar tarea",
+        message = "¿Eliminar la tarea '$taskToDeleteTitle'? No se puede deshacer.",
+        confirmButtonText = "Eliminar",
+        dismissButtonText = "Cancelar",
+        isDestructive = true,
+        onConfirm = {
+            taskToDelete?.let { viewModel.deleteTask(it) }
+            showDeleteConfirmation = false
+            taskToDelete = null
+            taskToDeleteTitle = ""
+        },
+        onDismiss = {
+            showDeleteConfirmation = false
+            taskToDelete = null
+            taskToDeleteTitle = ""
+        },
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundDeep)
+            .background(colors.background)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text("Tareas programadas", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        AresTabHeroHeader(
+            title = "Tareas",
+            subtitle = "AUTOMATIZACIONES Y EVENTOS PROGRAMADOS",
+            tag = "TASK",
+        )
 
         if (tasks.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("⏱", fontSize = 32.sp)
-                    Text("Sin tareas programadas", color = TextMuted, fontSize = 13.sp)
-                    Text("Dile a ARES que cree una alarma", color = TextMuted, fontSize = 11.sp)
+                    Text("Sin tareas programadas", color = colors.onSurfaceVariant, fontSize = 13.sp)
+                    Text("Dile a ARES que cree una alarma", color = colors.onSurfaceVariant, fontSize = 11.sp)
                 }
             }
         } else {
@@ -68,8 +102,8 @@ fun TasksScreen(viewModel: TasksViewModel) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(SurfaceVariantDark, RoundedCornerShape(12.dp))
-                            .border(1.dp, NeonRedBorder, RoundedCornerShape(12.dp))
+                            .background(colors.surfaceVariant, RoundedCornerShape(12.dp))
+                            .border(1.dp, colors.outlineVariant, RoundedCornerShape(12.dp))
                             .padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
@@ -77,22 +111,26 @@ fun TasksScreen(viewModel: TasksViewModel) {
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(
                                 formatter.format(Date(task.triggerAtMillis)),
-                                color = NeonRed,
+                                color = colors.primary,
                                 fontSize = 10.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Medium,
                                 letterSpacing = 0.5.sp,
                             )
-                            Text(task.title, color = TextPrimary, fontSize = 13.sp)
+                            Text(task.title, color = colors.onSurface, fontSize = 13.sp)
                             task.note?.takeIf { it.isNotBlank() }?.let {
-                                Text(it, color = TextSecondary, fontSize = 11.sp)
+                                Text(it, color = colors.onSurfaceVariant, fontSize = 11.sp)
                             }
                         }
                         IconButton(
-                            onClick = { viewModel.deleteTask(task.id) },
+                            onClick = {
+                                taskToDelete = task.id
+                                taskToDeleteTitle = task.title
+                                showDeleteConfirmation = true
+                            },
                             modifier = Modifier.size(36.dp),
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = TextMuted, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         }
                     }
                 }

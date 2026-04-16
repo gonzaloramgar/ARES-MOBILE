@@ -7,6 +7,7 @@ enum class ModelPreference {
     AUTO,
     E2B,
     E4B,
+    GWOPUS35,
 }
 
 enum class AresModelVariant(
@@ -41,6 +42,14 @@ enum class AresModelVariant(
         expectedSha256 = null,
         estimatedSizeBytes = 2_400_000_000L,
     ),
+    GWOPUS35(
+        key = "gwopus-3.5",
+        displayName = "GWOPUS 3.5 (Qwen)",
+        taskFileName = "gwopus-3.5-online",
+        downloadUrls = emptyList(),
+        expectedSha256 = null,
+        estimatedSizeBytes = 0L,
+    ),
 }
 
 data class ModelRouteDecision(
@@ -68,6 +77,7 @@ class ModelRouter(
         val variant = when (preference) {
             ModelPreference.E2B -> AresModelVariant.E2B
             ModelPreference.E4B -> AresModelVariant.E4B
+            ModelPreference.GWOPUS35 -> AresModelVariant.GWOPUS35
             ModelPreference.AUTO -> chooseAutomatic(
                 totalRamBytes = memoryInfo.totalMem,
                 availableRamBytes = memoryInfo.availMem,

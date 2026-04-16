@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,57 +36,80 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ares.mobile.ui.theme.BackgroundDeep
-import com.ares.mobile.ui.theme.BorderSubtle
-import com.ares.mobile.ui.theme.NeonRed
-import com.ares.mobile.ui.theme.NeonRedBorder
-import com.ares.mobile.ui.theme.SurfaceDark
-import com.ares.mobile.ui.theme.SurfaceVariantDark
-import com.ares.mobile.ui.theme.TextMuted
-import com.ares.mobile.ui.theme.TextPrimary
-import com.ares.mobile.ui.theme.TextSecondary
+import com.ares.mobile.ui.components.AresTabHeroHeader
+import com.ares.mobile.ui.components.ConfirmationDialog
+import com.ares.mobile.ui.theme.AresThemeMetallic
 import com.ares.mobile.viewmodel.MemoryViewModel
 
 @Composable
 fun MemoryScreen(viewModel: MemoryViewModel) {
+    AresThemeMetallic {
+        MemoryScreenContent(viewModel)
+    }
+}
+
+@Composable
+private fun MemoryScreenContent(viewModel: MemoryViewModel) {
+    val colors = MaterialTheme.colorScheme
     val memories by viewModel.memories.collectAsStateWithLifecycle()
     var key by remember { mutableStateOf("") }
     var value by remember { mutableStateOf("") }
+    var memoryToDelete by remember { mutableStateOf<String?>(null) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    // Confirmation dialog for deleting memory
+    ConfirmationDialog(
+        isVisible = showDeleteConfirmation,
+        title = "Eliminar recuerdo",
+        message = "¿Eliminar el recuerdo '$memoryToDelete'? No se puede deshacer.",
+        confirmButtonText = "Eliminar",
+        dismissButtonText = "Cancelar",
+        isDestructive = true,
+        onConfirm = {
+            memoryToDelete?.let { viewModel.deleteMemory(it) }
+            showDeleteConfirmation = false
+            memoryToDelete = null
+        },
+        onDismiss = {
+            showDeleteConfirmation = false
+            memoryToDelete = null
+        },
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundDeep)
+            .background(colors.background)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        // ── Header ─────────────────────────────────────────────────────
-        Text(
-            "Memoria",
-            color = TextPrimary,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
+        AresTabHeroHeader(
+            title = "Memoria",
+            subtitle = "HECHOS CLAVE Y CONTEXTO PERSISTENTE",
+            tag = "MEM",
         )
 
         // ── Add memory form ────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceDark, RoundedCornerShape(14.dp))
-                .border(1.dp, BorderSubtle, RoundedCornerShape(14.dp))
+                .background(colors.surface, RoundedCornerShape(14.dp))
+                .border(1.dp, colors.outline, RoundedCornerShape(14.dp))
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Añadir recuerdo", color = NeonRed, fontSize = 10.sp, letterSpacing = 1.sp, fontFamily = FontFamily.Monospace)
+            Text("Añadir recuerdo", color = colors.primary, fontSize = 10.sp, letterSpacing = 1.sp, fontFamily = FontFamily.Monospace)
 
             AresInputField(
                 value = key,
                 placeholder = "Clave  (ej: nombre)",
+                colors = colors,
                 onValueChange = { key = it },
             )
             AresInputField(
                 value = value,
                 placeholder = "Valor  (ej: Carlos)",
+                colors = colors,
                 onValueChange = { value = it },
             )
 
@@ -105,7 +129,7 @@ fun MemoryScreen(viewModel: MemoryViewModel) {
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Sin recuerdos guardados", color = TextMuted, fontSize = 13.sp)
+                Text("Sin recuerdos guardados", color = colors.onSurfaceVariant, fontSize = 13.sp)
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -113,8 +137,8 @@ fun MemoryScreen(viewModel: MemoryViewModel) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(SurfaceVariantDark, RoundedCornerShape(10.dp))
-                            .border(1.dp, NeonRedBorder, RoundedCornerShape(10.dp))
+                            .background(colors.surfaceVariant, RoundedCornerShape(10.dp))
+                            .border(1.dp, colors.outlineVariant, RoundedCornerShape(10.dp))
                             .padding(start = 14.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
@@ -122,19 +146,22 @@ fun MemoryScreen(viewModel: MemoryViewModel) {
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
                                 memory.key,
-                                color = NeonRed,
+                                color = colors.primary,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Medium,
                                 fontFamily = FontFamily.Monospace,
                                 letterSpacing = 0.5.sp,
                             )
-                            Text(memory.value, color = TextPrimary, fontSize = 13.sp)
+                            Text(memory.value, color = colors.onSurface, fontSize = 13.sp)
                         }
                         IconButton(
-                            onClick = { viewModel.deleteMemory(memory.key) },
+                            onClick = {
+                                memoryToDelete = memory.key
+                                showDeleteConfirmation = true
+                            },
                             modifier = Modifier.size(36.dp),
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = TextMuted, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -145,20 +172,25 @@ fun MemoryScreen(viewModel: MemoryViewModel) {
 }
 
 @Composable
-private fun AresInputField(value: String, placeholder: String, onValueChange: (String) -> Unit) {
+private fun AresInputField(
+    value: String,
+    placeholder: String,
+    colors: androidx.compose.material3.ColorScheme,
+    onValueChange: (String) -> Unit,
+) {
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = Modifier
             .fillMaxWidth()
-            .background(BackgroundDeep, RoundedCornerShape(10.dp))
-            .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
+            .background(colors.background, RoundedCornerShape(10.dp))
+            .border(1.dp, colors.outline, RoundedCornerShape(10.dp))
             .padding(horizontal = 14.dp, vertical = 10.dp),
-        textStyle = LocalTextStyle.current.copy(color = TextPrimary, fontSize = 13.sp),
-        cursorBrush = SolidColor(NeonRed),
+        textStyle = LocalTextStyle.current.copy(color = colors.onBackground, fontSize = 13.sp),
+        cursorBrush = SolidColor(colors.primary),
         singleLine = true,
         decorationBox = { inner ->
-            if (value.isEmpty()) Text(placeholder, color = TextSecondary, fontSize = 13.sp)
+            if (value.isEmpty()) Text(placeholder, color = colors.onSurfaceVariant, fontSize = 13.sp)
             inner()
         },
     )

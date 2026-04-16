@@ -13,6 +13,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,11 +49,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
@@ -72,6 +79,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ares.mobile.agent.ChatMessage
 import com.ares.mobile.agent.MessageRole
+import com.ares.mobile.ui.components.ConfirmationDialog
 import com.ares.mobile.ui.components.MessageBubble
 import com.ares.mobile.ui.components.QuickActionsBar
 import com.ares.mobile.ui.components.TypingIndicator
@@ -84,6 +92,7 @@ import com.ares.mobile.ui.theme.SurfaceDark
 import com.ares.mobile.ui.theme.TextMuted
 import com.ares.mobile.ui.theme.TextPrimary
 import com.ares.mobile.ui.theme.TextSecondary
+import com.ares.mobile.ui.theme.AresThemeVibrant
 import com.ares.mobile.viewmodel.ChatViewModel
 import java.io.File
 import java.io.FileOutputStream
@@ -91,9 +100,17 @@ import java.util.Locale
 
 @Composable
 fun ChatScreen(viewModel: ChatViewModel) {
+    AresThemeVibrant {
+        ChatScreenContent(viewModel)
+    }
+}
+
+@Composable
+private fun ChatScreenContent(viewModel: ChatViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val context = LocalContext.current
+    var showClearConfirmation by remember { mutableStateOf(false) }
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
@@ -113,6 +130,21 @@ fun ChatScreen(viewModel: ChatViewModel) {
         if (count > 0) listState.animateScrollToItem(count - 1)
     }
 
+    // Confirmation dialog for clearing conversation
+    ConfirmationDialog(
+        isVisible = showClearConfirmation,
+        title = "Borrar conversación",
+        message = "¿Estás seguro? Se eliminarán todos los mensajes. Esta acción no se puede deshacer.",
+        confirmButtonText = "Eliminar",
+        dismissButtonText = "Cancelar",
+        isDestructive = true,
+        onConfirm = {
+            viewModel.clearConversation()
+            showClearConfirmation = false
+        },
+        onDismiss = { showClearConfirmation = false },
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -122,7 +154,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
         AresChatHeader(
             modelHeadline = state.modelHeadline,
             isGenerating = state.isGenerating,
-            onClear = viewModel::clearConversation,
+            onClear = { showClearConfirmation = true },
         )
 
         // ── Install hint ───────────────────────────────────────────────
@@ -250,17 +282,7 @@ private fun AresChatHeader(
     ) {
         // Logo
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .background(
-                        Brush.linearGradient(listOf(NeonRed, NeonRedDim)),
-                        RoundedCornerShape(10.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("⬡", fontSize = 17.sp)
-            }
+            AresDiamondLogo()
             Text(
                 text = "ARES",
                 color = NeonRed,
@@ -296,6 +318,71 @@ private fun AresChatHeader(
                     modifier = Modifier.size(18.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AresDiamondLogo() {
+    val transition = rememberInfiniteTransition(label = "miniLogo")
+    val diamondRotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(12000, easing = LinearEasing), RepeatMode.Restart),
+        label = "diamondRotation",
+    )
+    val glowPulse by transition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Reverse),
+        label = "glowPulse",
+    )
+
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .background(Brush.linearGradient(listOf(NeonRed, NeonRedDim)), RoundedCornerShape(10.dp))
+            .border(1.dp, NeonRed.copy(alpha = 0.35f), RoundedCornerShape(10.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(26.dp)) {
+            val c = center
+            val r = size.minDimension / 2f
+
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.18f),
+                radius = r,
+            )
+            drawCircle(
+                color = NeonRed.copy(alpha = 0.18f * glowPulse),
+                radius = r * 0.9f,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2.dp.toPx()),
+            )
+
+            rotate(degrees = diamondRotation, pivot = c) {
+                val diamond = Path().apply {
+                    moveTo(c.x, c.y - r * 0.62f)
+                    lineTo(c.x + r * 0.62f, c.y)
+                    lineTo(c.x, c.y + r * 0.62f)
+                    lineTo(c.x - r * 0.62f, c.y)
+                    close()
+                }
+                drawPath(
+                    path = diamond,
+                    brush = Brush.radialGradient(
+                        listOf(NeonRed.copy(alpha = 0.95f), NeonRedDim.copy(alpha = 0.85f)),
+                        center = c,
+                        radius = r,
+                    ),
+                )
+                drawPath(
+                    path = diamond,
+                    color = Color.White.copy(alpha = 0.35f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()),
+                )
+            }
+
+            drawCircle(color = Color.White.copy(alpha = 0.75f), radius = 1.4.dp.toPx(), center = c)
         }
     }
 }
@@ -381,22 +468,23 @@ private fun AresChatInput(
             Spacer(Modifier.weight(1f))
 
             // Send button
+            val canSend = !isGenerating && input.isNotBlank()
             Box(
                 modifier = Modifier
                     .size(42.dp)
                     .background(
-                        if (!isGenerating) Brush.linearGradient(listOf(NeonRed, NeonRedDim))
+                        if (canSend) Brush.linearGradient(listOf(NeonRed, NeonRedDim))
                         else Brush.linearGradient(listOf(TextMuted, TextMuted)),
                         CircleShape,
                     )
                     .clip(CircleShape)
-                    .clickable(enabled = !isGenerating && input.isNotBlank()) { onSend() },
+                    .clickable(enabled = canSend) { onSend() },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Enviar",
-                    tint = androidx.compose.ui.graphics.Color.White,
+                    contentDescription = if (canSend) "Enviar" else "Escribir mensaje para enviar",
+                    tint = if (canSend) androidx.compose.ui.graphics.Color.White else TextMuted,
                     modifier = Modifier.size(18.dp),
                 )
             }

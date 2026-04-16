@@ -33,6 +33,11 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
 
+    lint {
+        // Workaround for AGP/Lint crash in SuspiciousModifierThenDetector on Compose chains.
+        disable += "SuspiciousModifierThen"
+    }
+
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }
@@ -41,6 +46,8 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)
+    androidTestImplementation(composeBom)
+    debugImplementation(composeBom)
 
     // Compose UI
     implementation("androidx.compose.ui:ui")
