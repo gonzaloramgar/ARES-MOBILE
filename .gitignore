@@ -1,4 +1,6 @@
-# ─── Build output ────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════
+# BUILD OUTPUTS & COMPILED FILES
+# ═════════════════════════════════════════════════════════════════
 bin/
 obj/
 Build/
@@ -6,43 +8,81 @@ releases/
 **/build/
 **/out/
 **/dist/
+*.apk
+*.aab
+*.class
+*.jar
 
-# Android / Gradle builds
+# ═════════════════════════════════════════════════════════════════
+# ANDROID / GRADLE
+# ═════════════════════════════════════════════════════════════════
+.gradle/
 ARES-mobile/.gradle/
 ARES-mobile/build/
 ARES-mobile/app/build/
 ARES-mobile/**/build/
+ARES-mobile/local.properties
+ARES-mobile/.kotlin/
+ARES-mobile/captures/
+ARES-mobile/**/*.apk
+ARES-mobile/**/*.aab
 
-# ─── Visual Studio / Rider ───────────────────────────────────────
-*.user
-*.suo
-.vs/
-*.DotSettings.user
-
-# IDE / local workspace metadata
+# ═════════════════════════════════════════════════════════════════
+# IDE & EDITOR LOCAL CONFIG (NEVER commit!)
+# ═════════════════════════════════════════════════════════════════
+# IntelliJ IDEA / Android Studio
 .idea/
 *.iml
+*.iws
+*.ipr
+.kotlin/
+
+# Visual Studio Code (workspace settings are personal)
 .vscode/
+*.code-workspace
+
+# Visual Studio / Rider
+.vs/
+.rider/
+*.user
+*.suo
+*.DotSettings.user
+*.DotSettings
 
 # ─── Runtime data (generada por la app, local a cada usuario) ────
 # Toda la carpeta data/ se genera al iniciar: config, historial,
 # herramientas escaneadas, voces TTS descargadas, logs y crashes.
 ARES-desktop/AresAssistant/data/
+ARES-desktop/AresAssistant/logs/
 
-# Android local machine files
-ARES-mobile/local.properties
-ARES-mobile/.kotlin/
-captures/
-
-# Node / design preview server local artifacts
-design-preview-server/
-
-# ─── OS ──────────────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════
+# OS-SPECIFIC FILES
+# ═════════════════════════════════════════════════════════════════
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
 desktop.ini
+*.swp
+*.swo
+*~
 
-# ─── Herramientas internas ───────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════
+# PROJECT-SPECIFIC LOCAL TOOLS & ARTIFACTS
+# ═════════════════════════════════════════════════════════════════
 .superpowers/
 .claude/
-docs/
+design-preview-server/
+
+# ═════════════════════════════════════════════════════════════════
+# TEMP FILES & LOGS
+# ═════════════════════════════════════════════════════════════════
+*.log
+*.tmp
+*.bak
+*.swp
+.cache/
+temp/
+tmp/
